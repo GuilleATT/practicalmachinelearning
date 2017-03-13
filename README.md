@@ -1,5 +1,8 @@
-# practicalmachinelearning
+# Practical Machine Learning: Course project
 
-## Esto son unos cambios de prueba
+This repository contains the R code and the documentation of the final course project of the MOOC Practical Machine Learning on Coursera.
 
-## This is just a test 
+The task was to predict the type of barbell lift based on data from several accelerometers.
+
+The file writeup.Rmd contains a description of the task and the machine-learning process with Random Forests together with the results.
+
