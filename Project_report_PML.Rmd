@@ -1,0 +1,91 @@
+---
+title: "Weight Lifting Exercises Dataset"
+author: "Guillermo ATT"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r warning=FALSE,message=FALSE}
+## Loads the necessary libraries
+library(ggplot2);library(lattice);library(caret);library(rpart);library(rattle)
+```
+
+## Synopsis
+In this report we aim to develop an statistical model able to predict a discrete variable, "classe". The data source comes from an actual research paper by Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. titled "Qualitative Activity Recognition of Weight Lifting Exercises". The predicted variable determines if the exercise has been performed in the right way (A) or instead it has some kind of defect in relationship with some part of the body that did not behave correctly (outputs B, C, D, E). First, we will train several models and evaluate its accuracy and secondly, we make a prediction on the test set in order to answer Coursera's quiz. 
+
+## Loading and Processing the Raw Data
+### Importing the data 
+From the url's at Coursera we download and visualize dimensions of the training and test set to get some intuition of the data.
+
+```{r cache=TRUE}
+train_url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+train_data<-read.csv(train_url, na.strings=c("NA","#DIV/0!",""))
+test_data<-read.csv(test_url, na.strings=c("NA","#DIV/0!",""))
+
+## Now we partition the train_data set in two (60% - 40%)
+inTrain <- createDataPartition(train_data$classe, p=0.6, list=FALSE)
+myTraining <- train_data[inTrain, ]
+myTesting <- train_data[-inTrain, ]
+dim(myTraining); dim(myTesting)
+```
+
+### Cleaning the data
+In order to make good predictions using Decision Trees and Random Forest it is necessary to remove variables which contain NA values. 
+
+```{r}
+myTraining <- myTraining[, colSums(is.na(myTraining)) == 0]
+myTesting <- myTesting[, colSums(is.na(myTesting)) == 0]
+```
+
+We also remove columns from 1 to 7 due to its little predicting value
+```{r}
+myTraining <- myTraining[, -c(1:7)]
+myTesting <- myTesting[, -c(1:7)]
+```
+
+Now it is needed to remove variables related one another. For this, we use the function NearZeroVariance
+```{r}
+nzv <- nearZeroVar(myTraining, saveMetrics=TRUE)
+myTraining <- myTraining[,nzv$nzv==FALSE]
+
+nzv<- nearZeroVar(myTesting,saveMetrics=TRUE)
+myTesting <- myTesting[,nzv$nzv==FALSE]
+
+dim(myTraining);dim(myTesting)
+```
+
+We end up with 53 variables to use from training the model.
+
+## Training the models
+We will use Decision Trees and Random Forest as prediction algorithms. 
+
+### Decision tree
+```{r cache.lazy=TRUE}
+set.seed(1234)
+modFitA1 <- train(classe ~ ., data=myTraining, method="rpart")
+predictionsA1 <- predict(modFitA1, myTesting)
+confusionMatrix(predictionsA1, myTesting$classe)
+```
+
+Accuracy obtained it's about 74%
+
+### Random Forest
+
+```{r cache=TRUE, cache.lazy=TRUE}
+control <- trainControl(method = "cv", number = 2)
+modFitB1 <- train(classe ~. , data=myTraining,method="rf",trControl=control,prox=TRUE)
+predictionsB1 <- predict(modFitB1, myTesting)
+confusionMatrix(predictionsB1, myTesting$classe)
+```
+Accuracy obtained it's about 99%
+
+### Prediction for assigment
+```{r}
+result<-predict(modFitB1,test_data)
+result
+```
